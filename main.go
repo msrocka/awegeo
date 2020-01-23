@@ -41,9 +41,9 @@ func main() {
 				if err != nil {
 					break
 				}
-				println(p.Description)
+				println(p.Coordinates)
+				placemarks++
 			}
-			placemarks++
 		}
 
 		if err != nil {
