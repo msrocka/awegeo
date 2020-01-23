@@ -1,7 +1,7 @@
 # awegeo
 `awegeo` is a simple command line tool that converts a KML/KMZ file of
-the [AWARE](http://www.wulca-waterlca.org/aware.html) method into a GeoJSON
-file.
+the [AWARE](http://www.wulca-waterlca.org/aware.html) method into a
+[GeoJSON](https://tools.ietf.org/html/rfc7946) file.
 
 
 ```xml

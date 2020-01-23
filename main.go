@@ -37,13 +37,18 @@ func main() {
 		case xml.StartElement:
 			if t.Name.Local == "Placemark" {
 				var p Placemark
-				err := decoder.DecodeElement(&p, &t)
+				err = decoder.DecodeElement(&p, &t)
 				if err != nil {
 					break
 				}
-				print(p.Description)
+				println(p.Description)
 			}
 			placemarks++
+		}
+
+		if err != nil {
+			println("ERROR: failed to parse placemark", err)
+			break
 		}
 
 		if placemarks > 5 {
