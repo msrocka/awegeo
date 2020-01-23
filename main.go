@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"os"
 )
 
@@ -23,15 +24,26 @@ func main() {
 	decoder := xml.NewDecoder(buff)
 	placemarks := 0
 	for {
-		token, _ := decoder.Token()
+		token, err := decoder.Token()
+		if err != nil && err != io.EOF {
+			println("ERROR: failed to parse KML")
+			break
+		}
 		if token == nil {
 			break
 		}
+
 		switch t := token.(type) {
 		case xml.StartElement:
 			if t.Name.Local == "Placemark" {
-				placemarks++
+				var p Placemark
+				err := decoder.DecodeElement(&p, &t)
+				if err != nil {
+					break
+				}
+				print(p.Description)
 			}
+			placemarks++
 		}
 
 		if placemarks > 5 {
