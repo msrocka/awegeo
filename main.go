@@ -36,7 +36,7 @@ func main() {
 	for {
 		token, err := decoder.Token()
 		if err != nil && err != io.EOF {
-			println("ERROR: failed to parse KML")
+			println("ERROR: failed to parse KML:", err.Error())
 			break
 		}
 		if token == nil {

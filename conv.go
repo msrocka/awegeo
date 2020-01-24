@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/xml"
+	"io"
 	"strconv"
 	"strings"
 )
@@ -12,6 +14,11 @@ type Placemark struct {
 	ID          string `xml:"id,attr"`
 	Description string `xml:"description"`
 	Coordinates string `xml:"MultiGeometry>Polygon>outerBoundaryIs>LinearRing>coordinates"`
+}
+
+// Tr contains the values of an HTML table row.
+type Tr struct {
+	Td []string `xml:"td"`
 }
 
 // A FeatureCollection of features created from KML placemarks. This
@@ -66,5 +73,45 @@ func (p *Placemark) asFeature() *Feature {
 	}
 	f.Geometry.Coordinates = make([][][]float64, 1)
 	f.Geometry.Coordinates[0] = points
+
+	f.Properties = make(map[string]interface{})
+	f.Properties["id"] = p.ID
+	parseDescription(p.Description, f.Properties)
 	return &f
+}
+
+func parseDescription(description string,
+	into map[string]interface{}) {
+	reader := strings.NewReader(description)
+	decoder := xml.NewDecoder(reader)
+	end := false
+	for {
+		token, err := decoder.Token()
+		if err != nil && err != io.EOF {
+			println("ERROR: failed to parse description:", err.Error())
+			break
+		}
+		if token == nil {
+			break
+		}
+
+		switch t := token.(type) {
+		case xml.StartElement:
+			if t.Name.Local == "tr" {
+				var tr Tr
+				err := decoder.DecodeElement(&tr, &t)
+				if err != nil && len(tr.Td) > 1 {
+					into[tr.Td[0]] = tr.Td[1]
+				}
+			}
+		case xml.EndElement:
+			if t.Name.Local == "body" {
+				end = true
+			}
+		}
+
+		if end {
+			break
+		}
+	}
 }
