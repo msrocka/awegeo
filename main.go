@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"encoding/xml"
 	"fmt"
 	"io"
 	"os"
@@ -15,12 +14,12 @@ func main() {
 		return
 	}
 
-	kmlFile, err := os.Open(os.Args[1])
+	reader, err := NewReader(os.Args[1])
 	if err != nil {
-		println("ERROR: failed to read file", kmlFile)
+		println("ERROR: failed to read file", os.Args[1])
 		return
 	}
-	defer kmlFile.Close()
+	defer reader.Close()
 
 	jsonFile, err := os.Create(os.Args[2])
 	if err != nil {
@@ -29,42 +28,23 @@ func main() {
 	}
 	defer jsonFile.Close()
 
-	buff := bufio.NewReader(kmlFile)
-	decoder := xml.NewDecoder(buff)
-
 	var features []*Feature
 	for {
-		token, err := decoder.Token()
-		if err != nil && err != io.EOF {
+		placemark, err := reader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
 			println("ERROR: failed to parse KML:", err.Error())
 			break
 		}
-		if token == nil {
-			break
-		}
 
-		switch t := token.(type) {
-		case xml.StartElement:
-			if t.Name.Local == "Placemark" {
-				var p Placemark
-				err = decoder.DecodeElement(&p, &t)
-				if err != nil {
-					break
-				}
-				f := p.asFeature()
-				if f != nil {
-					features = append(features, f)
-					if len(features)%1000 == 0 {
-						println("parsed", len(features), "features")
-					}
-				}
-
+		feature := placemark.asFeature()
+		if feature != nil {
+			features = append(features, feature)
+			if len(features)%1000 == 0 {
+				println("parsed", len(features), "features")
 			}
-		}
-
-		if err != nil {
-			println("ERROR: failed to parse placemark", err)
-			break
 		}
 	}
 	println("finished", len(features), "features")
