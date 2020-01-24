@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -14,21 +12,22 @@ func main() {
 		return
 	}
 
+	// set up the reader and writer
 	reader, err := NewReader(os.Args[1])
 	if err != nil {
 		println("ERROR: failed to read file", os.Args[1])
 		return
 	}
 	defer reader.Close()
-
-	jsonFile, err := os.Create(os.Args[2])
+	writer, err := NewWriter(os.Args[2])
 	if err != nil {
-		println("ERROR: failed to write file", jsonFile)
+		println("ERROR: failed to write file", os.Args[2])
 		return
 	}
-	defer jsonFile.Close()
+	defer writer.Close()
 
-	var features []*Feature
+	// run the conversion lopp
+	count := 0
 	for {
 		placemark, err := reader.Next()
 		if err == io.EOF {
@@ -38,33 +37,13 @@ func main() {
 			println("ERROR: failed to parse KML:", err.Error())
 			break
 		}
-
-		feature := placemark.asFeature()
-		if feature != nil {
-			features = append(features, feature)
-			if len(features)%1000 == 0 {
-				println("parsed", len(features), "features")
-			}
+		writer.Put(placemark)
+		count++
+		if count%1000 == 0 {
+			println("parsed", count, "features")
 		}
 	}
-	println("finished", len(features), "features")
-
-	coll := FeatureCollection{
-		Type:     "FeatureCollection",
-		Features: features,
-	}
-	bytes, err := json.Marshal(coll)
-	if err != nil {
-		println("ERROR: failed to create JSON output:", err)
-		return
-	}
-
-	out := bufio.NewWriter(jsonFile)
-	_, err = out.Write(bytes)
-	if err != nil {
-		println("ERROR: failed to write JSON file:", err)
-	}
-	out.Flush()
+	println("finished", count, "features")
 	println("all done")
 }
 
