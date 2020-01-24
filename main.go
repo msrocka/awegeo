@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -17,12 +18,21 @@ func main() {
 	kmlFile, err := os.Open(os.Args[1])
 	if err != nil {
 		println("ERROR: failed to read file", kmlFile)
+		return
 	}
 	defer kmlFile.Close()
 
+	jsonFile, err := os.Create(os.Args[2])
+	if err != nil {
+		println("ERROR: failed to write file", jsonFile)
+		return
+	}
+	defer jsonFile.Close()
+
 	buff := bufio.NewReader(kmlFile)
 	decoder := xml.NewDecoder(buff)
-	placemarks := 0
+
+	var features []*Feature
 	for {
 		token, err := decoder.Token()
 		if err != nil && err != io.EOF {
@@ -41,8 +51,10 @@ func main() {
 				if err != nil {
 					break
 				}
-				println(p.Coordinates)
-				placemarks++
+				f := p.asFeature()
+				if f != nil {
+					features = append(features, f)
+				}
 			}
 		}
 
@@ -50,13 +62,27 @@ func main() {
 			println("ERROR: failed to parse placemark", err)
 			break
 		}
-
-		if placemarks > 5 {
+		if len(features) > 5 {
 			break
 		}
 	}
 
-	fmt.Println("found", placemarks, "placemarks")
+	coll := FeatureCollection{
+		Type:     "FeatureCollection",
+		Features: features,
+	}
+	bytes, err := json.MarshalIndent(coll, "", " ")
+	if err != nil {
+		println("ERROR: failed to create JSON output:", err)
+		return
+	}
+
+	out := bufio.NewWriter(jsonFile)
+	_, err = out.Write(bytes)
+	if err != nil {
+		println("ERROR: failed to write JSON file:", err)
+	}
+	out.Flush()
 }
 
 func printHelp() {
