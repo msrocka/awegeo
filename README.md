@@ -6,7 +6,7 @@ the [AWARE](http://www.wulca-waterlca.org/aware.html) method into a
 
 ```
 usage:
-  $> awegeo [input kml file] [output json file]
+  $> awegeo [input kml/kmz file] [output json file]
 ```
 
 The placemarks in the AWARE KML files contain simple polygons. The
