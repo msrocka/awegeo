@@ -1,8 +1,7 @@
 package main
 
 import (
-	"encoding/xml"
-	"io"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -14,11 +13,6 @@ type Placemark struct {
 	ID          string `xml:"id,attr"`
 	Description string `xml:"description"`
 	Coordinates string `xml:"MultiGeometry>Polygon>outerBoundaryIs>LinearRing>coordinates"`
-}
-
-// Tr contains the values of an HTML table row.
-type Tr struct {
-	Td []string `xml:"td"`
 }
 
 // A FeatureCollection of features created from KML placemarks. This
@@ -80,38 +74,17 @@ func (p *Placemark) asFeature() *Feature {
 	return &f
 }
 
-func parseDescription(description string,
-	into map[string]interface{}) {
-	reader := strings.NewReader(description)
-	decoder := xml.NewDecoder(reader)
-	end := false
-	for {
-		token, err := decoder.Token()
-		if err != nil && err != io.EOF {
-			println("ERROR: failed to parse description:", err.Error())
-			break
-		}
-		if token == nil {
-			break
-		}
-
-		switch t := token.(type) {
-		case xml.StartElement:
-			if t.Name.Local == "tr" {
-				var tr Tr
-				err := decoder.DecodeElement(&tr, &t)
-				if err != nil && len(tr.Td) > 1 {
-					into[tr.Td[0]] = tr.Td[1]
-				}
-			}
-		case xml.EndElement:
-			if t.Name.Local == "body" {
-				end = true
-			}
-		}
-
-		if end {
-			break
+func parseDescription(description string, into map[string]interface{}) {
+	re := regexp.MustCompile(`<tr><td>([^<]+)<\/td><td>([^<]+)<\/td><\/tr>`)
+	matches := re.FindAllStringSubmatch(description, -1)
+	for _, match := range matches {
+		key := match[1]
+		val := match[2]
+		num, err := strconv.ParseFloat(val, 64)
+		if err == nil {
+			into[key] = num
+		} else {
+			into[key] = val
 		}
 	}
 }

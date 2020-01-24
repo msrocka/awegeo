@@ -54,7 +54,11 @@ func main() {
 				f := p.asFeature()
 				if f != nil {
 					features = append(features, f)
+					if len(features)%1000 == 0 {
+						println("parsed", len(features), "features")
+					}
 				}
+
 			}
 		}
 
@@ -62,16 +66,14 @@ func main() {
 			println("ERROR: failed to parse placemark", err)
 			break
 		}
-		if len(features) > 5 {
-			break
-		}
 	}
+	println("finished", len(features), "features")
 
 	coll := FeatureCollection{
 		Type:     "FeatureCollection",
 		Features: features,
 	}
-	bytes, err := json.MarshalIndent(coll, "", " ")
+	bytes, err := json.Marshal(coll)
 	if err != nil {
 		println("ERROR: failed to create JSON output:", err)
 		return
@@ -83,6 +85,7 @@ func main() {
 		println("ERROR: failed to write JSON file:", err)
 	}
 	out.Flush()
+	println("all done")
 }
 
 func printHelp() {

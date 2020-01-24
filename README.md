@@ -60,3 +60,5 @@ the [AWARE](http://www.wulca-waterlca.org/aware.html) method into a
   </MultiGeometry>
 </Placemark>
 ```
+
+`<tr><td>([^<]*)<\/td><td>([^<]*)<\/td><\/tr>`
