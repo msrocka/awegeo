@@ -26,24 +26,40 @@ func main() {
 	}
 	defer writer.Close()
 
-	// run the conversion lopp
-	count := 0
-	for {
-		placemark, err := reader.Next()
-		if err == io.EOF {
-			break
+	channel := make(chan *Placemark, 1000)
+
+	// read the placemarks from the reader
+	// and put them into the channel
+	go func() {
+		count := 0
+		for {
+			placemark, err := reader.Next()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				println("ERROR: failed to parse KML:", err.Error())
+				break
+			}
+			channel <- placemark
+			count++
+			if count%1000 == 0 {
+				println("parsed", count, "features")
+			}
 		}
-		if err != nil {
-			println("ERROR: failed to parse KML:", err.Error())
+		close(channel)
+		println("finished", count, "features")
+	}()
+
+	// read the placemarks from the channel and put
+	// them into the writer
+	for {
+		placemark, more := <-channel
+		if !more {
 			break
 		}
 		writer.Put(placemark)
-		count++
-		if count%1000 == 0 {
-			println("parsed", count, "features")
-		}
 	}
-	println("finished", count, "features")
 	println("all done")
 }
 
