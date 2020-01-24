@@ -1,9 +1,13 @@
 package main
 
 import (
+	"archive/zip"
 	"bufio"
 	"encoding/xml"
+	"errors"
+	"io"
 	"os"
+	"strings"
 )
 
 // The Placemark KML tag. We only fetch the data into fields that
@@ -17,12 +21,16 @@ type Placemark struct {
 
 // Reader reads placemarks from a KML file.
 type Reader struct {
-	file    *os.File
+	file    io.ReadCloser
+	zipFile *zip.ReadCloser
 	decoder *xml.Decoder
 }
 
 // Close the underlying KML file of the reader.
 func (r *Reader) Close() {
+	if r.zipFile != nil {
+		r.zipFile.Close()
+	}
 	if r.file != nil {
 		r.file.Close()
 	}
@@ -30,17 +38,51 @@ func (r *Reader) Close() {
 
 // NewReader creates a new reader for the given KML file.
 func NewReader(kmlFile string) (*Reader, error) {
-	file, err := os.Open(kmlFile)
-	if err != nil {
-		return nil, err
+
+	reader := &Reader{}
+
+	if !strings.HasSuffix(kmlFile, ".kmz") {
+
+		// try to read the file as KML file
+		kml, err := os.Open(kmlFile)
+		if err != nil {
+			return nil, err
+		}
+		reader.file = kml
+
+	} else {
+
+		// try to read the KML document from a KMZ file
+		zipFile, err := zip.OpenReader(kmlFile)
+		if err != nil {
+			return nil, err
+		}
+		reader.zipFile = zipFile
+
+		// search for the *kml entry in the zip
+		var zipEntry *zip.File
+		for i := range zipFile.File {
+			f := zipFile.File[i]
+			if strings.HasSuffix(f.Name, ".kml") {
+				zipEntry = f
+				break
+			}
+		}
+		if zipEntry == nil {
+			return nil, errors.New(
+				"Could not find KML file in " + kmlFile)
+		}
+
+		kmz, err := zipEntry.Open()
+		if err != nil {
+			return nil, err
+		}
+		reader.file = kmz
 	}
-	buff := bufio.NewReader(file)
-	decoder := xml.NewDecoder(buff)
-	r := &Reader{
-		file:    file,
-		decoder: decoder,
-	}
-	return r, nil
+
+	buff := bufio.NewReader(reader.file)
+	reader.decoder = xml.NewDecoder(buff)
+	return reader, nil
 }
 
 // Next reads the next placemark from the reader. It returns
