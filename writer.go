@@ -125,7 +125,9 @@ func (w *Writer) parseProps(description string) map[string]interface{} {
 		val := match[2]
 		num, err := strconv.ParseFloat(val, 64)
 		if err == nil {
-			props[key] = num
+			if num != -9999 {
+				props[key] = num
+			}
 		} else {
 			props[key] = val
 		}
