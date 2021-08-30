@@ -1,17 +1,34 @@
 # awegeo
-`awegeo` is a simple command line tool that converts a KML/KMZ file of
-the [AWARE](http://www.wulca-waterlca.org/aware.html) method into a
-[GeoJSON](https://tools.ietf.org/html/rfc7946) file (tested with version
-1.2 of AWARE):
+`awegeo` is a simple command line tool that converts the KML/KMZ file of the
+AWARE method (the 'Google Layer Document' on the [download
+page](https://wulca-waterlca.org/aware/download-aware-factors/)) into a
+[GeoJSON](https://tools.ietf.org/html/rfc7946) file.
+
+## Usage
+
+* Download the
+  [AWARE_v1_2April_7th.kmz_.zip](https://wulca-waterlca.org/aware/download-aware-factors/)
+  file and extract it.
+* You should find a `AWARE_v1_2April_7th.kmz` file which is also just a `zip`
+  file that can be further extracted and you should get a `doc.kml` file.
+* The `doc.kml` file can be converted using `awegeo` executable from the
+  command line: 
 
 ```
 usage:
-  $> awegeo [input kml/kmz file] [output json file]
+  $ awegeo [path/to/doc.kml] [path/to/output.geojson]
 ```
 
-The placemarks in the AWARE KML files contain simple polygons. The
-attributes of these polygons are stored in HTML tables within the description
-tag:
+The resulting GeoJSON file can be then used to create a regionalized LCIA method
+in openLCA 2:
+
+![](./openlca.png)
+
+## Details
+
+The placemarks in the AWARE KML files contain simple polygons. The attributes of
+these polygons are stored in HTML tables within the description tags of the
+respective placemarks:
 
 ```xml
 <Placemark id="ID_00000">
